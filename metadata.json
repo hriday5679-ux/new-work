@@ -1,0 +1,8 @@
+{
+  "name": "AICTE FDR360",
+  "description": "Intelligent Security Deposit & FDR Lifecycle Management Portal for AICTE with role-based workflows, automated maturity tracking, document verification with AI OCR, clearance matrix, and audit trails.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

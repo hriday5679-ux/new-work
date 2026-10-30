@@ -1,0 +1,159 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function getUserDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function getUserRole() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? getUserDoc().role
+        : 'GUEST';
+    }
+
+    function getUserAccountStatus() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? (getUserDoc().accountStatus != null ? getUserDoc().accountStatus : 'APPROVED')
+        : 'APPROVED';
+    }
+
+    function getUserInstitutionId() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? (getUserDoc().institutionId != null ? getUserDoc().institutionId : '')
+        : '';
+    }
+
+    function isAdmin() {
+      return (getUserRole() in ['ADMINISTRATOR', 'PORTAL_ADMIN'] && getUserAccountStatus() == 'APPROVED')
+        || (isSignedIn() && request.auth.token.email in ['hriday5679@gmail.com', 'harshpratapsingh925@gmail.com', 'admin@aicte.gov.in', 'workhack1111@gmail.com', 'jptiwari108@gmail.com']);
+    }
+
+    function isApprovedOfficerOrAdmin() {
+      return ((getUserAccountStatus() == 'APPROVED' || getUserAccountStatus() == null) &&
+        getUserRole() in [
+          'CHAIRMAN_MEMBER_SECRETARY',
+          'DIRECTOR_ADVISOR',
+          'REGIONAL_OFFICER',
+          'ACCOUNTS_FINANCE_OFFICER',
+          'SECTION_OFFICER',
+          'AUDIT_OFFICER',
+          'PORTAL_ADMIN',
+          'PGRC_OFFICER',
+          'VIGILANCE_OFFICER',
+          'ADMINISTRATOR'
+        ])
+        || (isSignedIn() && request.auth.token.email in ['hriday5679@gmail.com', 'harshpratapsingh925@gmail.com', 'admin@aicte.gov.in', 'workhack1111@gmail.com', 'jptiwari108@gmail.com']);
+    }
+
+    function isApprovedInstitutionUser(instId) {
+      return isSignedIn() &&
+        (
+          (getUserRole() in ['INSTITUTION', 'INSTITUTION_HEAD', 'INSTITUTION_REGISTRAR', 'INSTITUTION_ACCOUNTS', 'INSTITUTION_NODAL'] &&
+           (getUserInstitutionId() == instId || instId == '')) ||
+          getUserInstitutionId() == instId
+        );
+    }
+
+    // --- Users Collection ---
+    match /users/{userId} {
+      allow read: if isSignedIn();
+
+      // Create: User can create their initial profile document
+      allow create: if isSignedIn() && request.auth.uid == userId;
+
+      // Update: Admin or User can update their profile or complete onboarding
+      allow update: if isSignedIn() && (
+        isAdmin() ||
+        request.auth.uid == userId
+      );
+
+      allow delete: if isAdmin();
+    }
+
+    // --- Role Change Requests Collection ---
+    match /roleChangeRequests/{requestId} {
+      allow read: if isSignedIn() && (isAdmin() || request.auth.uid == resource.data.userId);
+      allow create: if isSignedIn() && request.auth.uid == incoming().userId;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // --- Access Requests Collection ---
+    match /accessRequests/{requestId} {
+      allow read: if isApprovedOfficerOrAdmin() || (isSignedIn() && request.auth.uid == requestId);
+      allow create: if isSignedIn() && request.auth.uid == requestId;
+      allow update: if isApprovedOfficerOrAdmin() || (
+        isSignedIn() && request.auth.uid == requestId &&
+        existing().status == 'PENDING' &&
+        incoming().status == 'PENDING'
+      );
+      allow delete: if isAdmin();
+    }
+
+    // --- Institutions Collection ---
+    match /institutions/{institutionId} {
+      allow read: if true; // Public directory read
+      allow create: if isSignedIn();
+      allow update: if isApprovedOfficerOrAdmin() || (isSignedIn() && getUserInstitutionId() == institutionId);
+      allow delete: if isAdmin();
+    }
+
+    // --- FDRs Collection ---
+    match /fdrs/{fdrId} {
+      allow read: if isApprovedOfficerOrAdmin() || (isSignedIn() && isApprovedInstitutionUser(resource.data.institutionId));
+      allow create: if isApprovedOfficerOrAdmin() || (isSignedIn() && isApprovedInstitutionUser(request.resource.data.institutionId));
+      allow update: if isApprovedOfficerOrAdmin() || (
+        isSignedIn() &&
+        isApprovedInstitutionUser(resource.data.institutionId) &&
+        request.resource.data.institutionId == resource.data.institutionId
+      );
+      allow delete: if isApprovedOfficerOrAdmin();
+    }
+
+    // --- Documents Vault Collection ---
+    match /documents/{documentId} {
+      allow read: if isApprovedOfficerOrAdmin() || (isSignedIn() && isApprovedInstitutionUser(resource.data.institutionId));
+      allow create: if isApprovedOfficerOrAdmin() || (isSignedIn() && isApprovedInstitutionUser(request.resource.data.institutionId));
+      allow update: if isApprovedOfficerOrAdmin() || (
+        isSignedIn() &&
+        isApprovedInstitutionUser(resource.data.institutionId) &&
+        request.resource.data.institutionId == resource.data.institutionId
+      );
+      allow delete: if isApprovedOfficerOrAdmin() || (isSignedIn() && isApprovedInstitutionUser(resource.data.institutionId));
+    }
+
+    // --- Release Requests Collection ---
+    match /releases/{releaseId} {
+      allow read: if isApprovedOfficerOrAdmin() || (isSignedIn() && isApprovedInstitutionUser(resource.data.institutionId));
+      allow create: if isSignedIn() && isApprovedInstitutionUser(request.resource.data.institutionId);
+      allow update: if isApprovedOfficerOrAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // --- Audit Logs (APPEND-ONLY) ---
+    match /auditLogs/{logId} {
+      allow read: if isApprovedOfficerOrAdmin() || isSignedIn();
+      allow create: if isSignedIn();
+      allow update, delete: if false; // STRICTLY IMMUTABLE
+    }
+  }
+}

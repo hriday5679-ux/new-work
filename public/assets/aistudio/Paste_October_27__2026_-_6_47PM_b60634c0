@@ -1,0 +1,497 @@
+# MASTER PROMPT — AICTE FDR360: COMPLETE PROJECT AUDIT, REPAIR, AND PRODUCTION-READY FUNCTIONALITY
+
+## Project identity
+
+Project name: **AICTE FDR360 — Intelligent Security Deposit & FDR Lifecycle Management Portal**
+
+Hackathon: Smart India Hackathon (SIH)
+
+Problem statement: SIH26265 — Streamline of Security Deposit/FDR Portal
+
+Platform: Existing Google AI Studio Build project with GitHub integration and Firebase where configured.
+
+## PRIMARY OBJECTIVE
+
+Transform the existing AICTE FDR360 project into a coherent, functional, responsive, multi-user web application that supports new institution registration, secure login, persistent forms, real document uploads, FDR lifecycle management, officer review, release requests, reports, and audit trails.
+
+**Do not create another prototype, do not replace the application with a static mockup, and do not rebuild from scratch.** Inspect the existing repository and repair the actual implementation, preserving working features, routes, GitHub integration, Firebase project configuration, and established design wherever possible.
+
+The two supplied screenshots show the current application. Use them as evidence of the current interface and investigate the underlying causes of its problems.
+
+The interface currently displays an FDR registration/OCR verification page and an FDR listing with repeated institution names and many demo-labelled records. The user reports that fields and records cannot be changed. Diagnose these issues in the actual code rather than merely changing their appearance.
+
+---
+
+# PRIORITY 1 — AUDIT THE EXISTING CODE BEFORE MAKING CHANGES
+
+Inspect the entire existing application and identify:
+
+- Framework, application entry point, routes, components, hooks, state management, and form libraries.
+- Existing Firebase Authentication, Firestore, Storage, security rules, and environment configuration.
+- All forms, inputs, buttons, menus, tables, modals, dropdowns, upload controls, and navigation items.
+- All hardcoded demo data, repeated institution arrays, duplicated FDR seeds, mock services, and placeholder handlers.
+- Queries and data relationships used by the Dashboard, My FDRs & Deposits, Register New FDR, Document Vault, Security Deposit Release, Maturity Calendar, Reports, and Admin pages.
+- Broken persistence, missing event handlers, stale state, incorrect database queries, uncontrolled or incorrectly controlled inputs, and invalid form bindings.
+- Authentication and authorization gaps.
+- Build, type-check, runtime, and console errors where tools are available.
+
+Produce an internal repair plan, then implement it. Do not stop after reporting findings.
+
+Work in small, coherent changes. Verify that the application still builds after important changes. Avoid broad rewrites that break working functionality.
+
+If something cannot be inspected or tested in the available environment, identify that limitation honestly.
+
+# PRIORITY 2 — FIX ALL NONFUNCTIONAL INPUTS AND EDIT ACTIONS
+
+The user currently cannot make changes on the displayed pages. Treat this as a critical defect.
+
+Every editable field must accept normal typing, pasting, selection, and appropriate date or numeric input.
+
+Repair:
+- Text, email, telephone, number, currency, date, textarea, checkbox, radio, and select controls.
+- Institution selectors and bank selectors.
+- FDR forms and OCR correction fields.
+- Search boxes, filters, sorting controls, and pagination.
+- Profile editing and registration forms.
+- Application and release request forms.
+- Document upload and replacement controls.
+- Buttons for Save Draft, Edit, Cancel, Submit, Resubmit, Delete where authorized, Approve, Reject, Request Correction, and Download.
+- Dropdown menus, dialog actions, navigation, and notification controls.
+
+For every form:
+1. Bind inputs correctly to component state or the project's form library.
+2. Validate values and show errors next to the relevant fields.
+3. Make the save action persist the data.
+4. Reload or query the saved record to verify persistence.
+5. Reflect successful changes in the UI without requiring a full manual reload.
+6. Provide loading, success, empty, validation-error, permission-denied, and network-error states.
+7. Prevent duplicate submissions while an operation is in progress.
+8. Preserve valid input when a recoverable error occurs.
+
+Do not disable inputs unnecessarily. If a field is read-only because of a genuine business rule or workflow status, explain why and provide an authorized correction or edit route where appropriate.
+
+Do not create decorative buttons that do nothing. Each visible action must have a working handler or be explicitly marked unavailable with a reason.
+
+# PRIORITY 3 — ELIMINATE DUPLICATE INSTITUTION MASTER RECORDS
+
+The institution data model and the FDR table must be corrected.
+
+Create a single canonical institution record per actual institution. Use a stable institution ID as the primary relationship key. Never use the institution name alone as a foreign key.
+
+Create separate, normalized collections or equivalent data structures for:
+- Institutions
+- User accounts and institution memberships
+- Applications
+- FDR/security deposit records
+- Documents and document versions
+- Release requests
+- Reviews and clearances
+- Notifications
+- Audit events
+- Configurable policies
+
+## Required institution reference records
+
+Include these institution names as reference records, without claiming that they have registered, submitted FDRs, or received approval.
+
+### GGSIPU-related institution references
+
+1. Maharaja Agrasen Institute of Technology
+2. Bhagwan Parshuram Institute of Technology
+3. Guru Tegh Bahadur Institute of Technology
+4. HMR Institute of Technology & Management
+5. Bharati Vidyapeeth’s College of Engineering
+6. Delhi Technical Campus
+7. JIMS Engineering Management Technical Campus
+8. Maharaja Surajmal Institute
+9. Maharaja Surajmal Institute of Technology
+10. Vivekananda Institute of Professional Studies
+11. Army Institute of Management & Technology
+12. Dr. Akhilesh Das Gupta Institute of Technology & Management
+
+### Private university references
+
+1. Amity University Uttar Pradesh
+2. Sharda University
+3. Galgotias University
+4. Noida International University
+5. Bennett University
+6. SGT University
+7. Amity University Haryana
+8. Apeejay Stya University
+9. GD Goenka University
+
+Keep institution categories separate and accurate. Verify current affiliations using authoritative sources before asserting them. If verification has not been completed, mark the affiliation as “Requires verification.” Do not invent official addresses, registration numbers, contacts, affiliation statuses, or approvals.
+
+## Institution deduplication rules
+
+- Create an institution once, using a stable ID.
+- Normalize names for duplicate detection while preserving the official display name.
+- Match case and whitespace variations without accidentally merging different institutions.
+- Do not automatically merge potentially different institutions just because their names resemble each other.
+- Add a review mechanism for suspected duplicate records.
+- Make the seed operation idempotent: running it again must not recreate the same institutions or duplicate FDRs.
+- Do not delete existing data blindly. Identify duplicates, preserve valid references, and migrate or reconcile relationships safely.
+- Enforce suitable uniqueness constraints or transactional checks where supported.
+- Provide a controlled admin workflow for resolving duplicate institution records.
+
+## Important distinction
+
+**An institution appearing on several FDR rows is not automatically a duplicate.** One institution may legitimately have multiple FDRs.
+
+The “My FDRs & Deposits” table should show one row per distinct FDR record. Repeated institution names across different FDRs are acceptable, but every row must link to the correct canonical institution.
+
+Institution directories, institution dropdowns, and institution master lists should list each institution once. Use institution IDs for joins, filters, grouping, and navigation.
+
+Add an institution profile/detail page showing the institution once, with its applications, FDRs, documents, release requests, and history organized underneath.
+
+# PRIORITY 4 — REPAIR THE FDR TABLE AND DEMO DATA
+
+Inspect the current FDR records shown in the screenshot, including entries with IDs resembling `TEST-FDR-...` and `SBI-FDR-2016-88910`.
+
+Determine whether repeated records are:
+- Legitimate distinct test records.
+- Accidentally duplicated seed records.
+- Records with conflicting IDs.
+- Repeated rows caused by an incorrect join or query.
+- Stale or incorrectly cached client state.
+
+Do not assume the answer. Inspect the source data and query logic.
+
+Implement:
+- Unique stable FDR record IDs.
+- Correct institution references.
+- Correct bank, principal, issue date, maturity date, status, and document relationships.
+- Duplicate warnings for potentially identical FDR numbers, especially within the same issuer/bank context.
+- Safe, authorized correction of erroneous records.
+- Search by FDR number, institution, and bank.
+- Filters by status, maturity range, institution, and application.
+- Sorting, pagination, and responsive layouts.
+- Clear status labels and tooltips.
+- Accurate calculations for days to maturity and expiry indicators, using the configured clock.
+- Clear distinction between principal, interest, and maturity value.
+- Consistent currency formatting in Indian rupees.
+
+Do not show the same FDR multiple times because of a one-to-many document or review join. Use correct query structure, aggregation, or distinct record handling.
+
+If an FDR genuinely has the same number as another record, flag it for review instead of silently deleting it.
+
+# PRIORITY 5 — MAKE NEW INSTITUTION REGISTRATION AVAILABLE TO EVERY NEW MEMBER
+
+Create a public landing page and working “Register New Institution” and “Sign In” routes.
+
+A new institution representative must be able to:
+1. Open the website without a pre-created demo account.
+2. Register an account using the configured authentication provider.
+3. Enter institution details and representative details.
+4. Verify their email if enabled.
+5. Complete onboarding.
+6. Save a draft registration.
+7. Submit the registration.
+8. Sign in later and continue where they left off.
+9. Update permitted profile fields.
+10. View registration status and any correction requests.
+
+Collect only the information actually needed. Institution fields may include official name, category, type, address, state, district, official email, phone, authorized representative, and applicable approval/affiliation details.
+
+Do not invent official identifiers or claim registration equals AICTE recognition.
+
+Support appropriate states such as Draft, Submitted, Under Review, Deficiency Raised, Approved, and Rejected. Only authorized officers can make official review decisions.
+
+Do not restrict normal access to hardcoded demo IDs. Demo accounts may remain available in an explicitly labelled demo environment, but new users must be able to register and use real configured authentication.
+
+Implement secure logout, session persistence, password reset, useful authentication errors, and route protection.
+
+Never store plaintext passwords, expose private keys in browser code, or allow users to assign themselves officer/admin roles.
+
+If authentication or email verification is not configured, provide exact setup instructions instead of simulating success.
+
+# PRIORITY 6 — COMPLETE THE INSTITUTION USER WORKSPACE
+
+After login, each institution user must have a working workspace with:
+
+- Institution profile.
+- Registration and application status.
+- New FDR submission.
+- Existing FDR list.
+- Document uploads and Document Vault.
+- Deficiency notices and resubmissions.
+- Security deposit release requests.
+- Maturity calendar and alerts.
+- Notifications.
+- Available acknowledgements and reports.
+- Audit/history view for their own permitted records.
+
+Users must be able to create, save, edit, validate, submit, and track their own records.
+
+Forms must preserve drafts and allow the user to return later. Clearly distinguish editable drafts from submitted or locked records.
+
+When a record is returned for correction, show the reason, affected fields/documents, deadline where configured, and an action to correct and resubmit.
+
+Never expose another institution’s private data to the current user.
+
+# PRIORITY 7 — FIX DOCUMENT UPLOADS AND DOCUMENT VAULT END TO END
+
+Every upload control must open a real file picker and save the actual file using the configured storage service.
+
+Support configured file types such as PDF, JPG, JPEG, and PNG, with explicit size limits. Validate file type and size both in the client and on the server/storage boundary where available.
+
+Allow authorized users to upload:
+- Institution registration documents.
+- FDR certificates.
+- Supporting affidavits and application documents.
+- Payment proof where applicable.
+- Deficiency replacements.
+- Release, closure, maturity, merger, NOC, and clearance documents when required by configured policy.
+
+For each upload:
+1. Validate the selected file.
+2. Show filename, size, category, and upload progress.
+3. Upload the file to secure storage.
+4. Save metadata only after the storage operation succeeds.
+5. Link the document to the correct institution and parent application/FDR/release request.
+6. Display the actual saved document in the appropriate list and Document Vault.
+7. Support authorized preview/download.
+8. Handle failed uploads and retries.
+9. Maintain document version history when a document is replaced.
+10. Record consequential upload/replacement events in the audit trail.
+
+Do not report success if the upload or metadata save failed. Prevent unauthorized users from reading or replacing documents. Do not expose publicly accessible storage URLs for confidential documents.
+
+## Document Vault requirements
+
+The Document Vault must:
+- Display persisted documents, not a fixed placeholder list.
+- Filter data to the current institution or the officer's authorized scope.
+- Provide search, filters, pagination, and useful metadata.
+- Show document category, parent record, upload date, verification status, uploader where permitted, and version.
+- Support authorized viewing/downloading and permitted replacement.
+- Link to the parent record.
+- Show useful empty states for newly registered institutions.
+- Display honest loading and error messages.
+
+An institution with no uploads should see a clear empty state and an upload action. It must not show fabricated documents.
+
+# PRIORITY 8 — IMPLEMENT FDR OCR CORRECTLY
+
+Keep the existing OCR registration experience, including the OCR-versus-form verification audit shown in the screenshot.
+
+Implement the following:
+- Upload an actual supported FDR certificate.
+- Run OCR through a configured provider or supported extraction service.
+- Extract candidate fields such as FDR number, bank name, principal amount, issue date, maturity date, holder names, and lien details when present.
+- Display extracted values beside editable form values.
+- Show field-level confidence only if supplied by the actual OCR system.
+- Identify matching, mismatching, missing, and manually corrected fields.
+- Let users correct extracted values.
+- Make “Sync OCR Values to Form” a working action that copies selected or confirmed extracted values into editable form fields.
+- Require explicit human confirmation before submitting.
+- Preserve both original extracted values and corrected values where auditability is required.
+
+Never invent OCR results, confidence scores, document verification, or authenticity. If OCR is unavailable, explain the limitation and let users enter the details manually.
+
+OCR is assistive only. A human reviewer must verify the original document before the record receives a verified or approved status.
+
+# PRIORITY 9 — COMPLETE FDR LIFECYCLE AND RELEASE WORKFLOW
+
+Implement a consistent, auditable state machine. Adapt the names to the existing application where appropriate:
+
+Draft → Submitted → Document Check → Under Scrutiny → Deficiency Raised → Resubmitted → Verified → Active → Expiring → Matured → Release Requested → Clearance/Review → Approved for Release → Released.
+
+Add Rejected, Withdrawn, and other appropriate states only where the configured policy permits them.
+
+The institution should be able to:
+- Submit an FDR/security deposit.
+- Track verification and activation.
+- Receive maturity alerts.
+- Submit a release request when eligible.
+- Attach required supporting documents.
+- See review progress.
+- Respond to deficiencies.
+- View the final decision and available acknowledgement.
+
+Authorized officers should be able to:
+- Check required documents.
+- Review OCR and form discrepancies.
+- Raise deficiencies with reasons.
+- Record review decisions.
+- Request applicable clearances.
+- Approve or reject according to permissions.
+- Record release details and audit history.
+
+Block prohibited transitions and explain why an action is unavailable. Do not permit a release merely because a button is clicked.
+
+Support maker/checker separation where configured. Do not allow the same user to perform incompatible approval steps unless the actual authorized policy permits it.
+
+# PRIORITY 10 — CONFIGURABLE POLICY, NOT FABRICATED OFFICIAL RULES
+
+Use a versioned policy configuration with:
+- Policy name and source.
+- Verification status.
+- Effective date and expiry, if applicable.
+- Required deposit rules and amounts.
+- Applicable institution/programme categories.
+- Lease-related calculation rules where confirmed.
+- Required documents.
+- Submission and release conditions.
+- Penalties and deadlines where confirmed.
+- Approval roles and workflow transitions.
+
+The policy notes supplied earlier by the project owner are unverified until supported by current official AICTE documents. Do not present them as verified official law or policy without checking the source.
+
+Allow administrators to configure rules with appropriate permissions and an audit trail. Use safe defaults when a rule is unknown: request review rather than inventing an answer.
+
+Make it clear when a policy is unverified, when a rule is missing, or when manual review is required.
+
+# PRIORITY 11 — ROLE-BASED ACCESS AND SECURITY
+
+Implement appropriate roles:
+- Institution User.
+- Regional Officer / Maker.
+- Central Bureau Head / Checker.
+- PGRC Reviewer.
+- Vigilance Reviewer.
+- Administrator.
+
+Enforce authorization in the data layer and server-side services or security rules wherever supported. UI visibility alone is not sufficient.
+
+Requirements:
+- An institution user sees only authorized records.
+- Officers see only records within their assigned scope.
+- Privileged actions require the correct role.
+- Users cannot grant themselves privileged access.
+- Sensitive documents require authenticated, authorized access.
+- Validate and sanitize user input.
+- Use secure upload restrictions.
+- Keep credentials and secrets out of client-side code.
+- Log consequential actions.
+- Avoid leaking personal or institutional data in errors or logs.
+- Provide safe handling for missing configuration and network failures.
+
+Inspect Firebase security rules and deployment settings. Do not weaken security rules simply to make the demo work.
+
+# PRIORITY 12 — REPAIR ALL CONNECTED PAGES
+
+Inspect and connect all existing routes and features:
+- Public landing page.
+- Sign in and registration.
+- Institution onboarding/profile.
+- Dashboard.
+- My FDRs & Deposits.
+- Register New FDR (AI OCR).
+- Document Vault.
+- Security Deposit Release.
+- Maturity Calendar.
+- Reports & CSV Exports.
+- Notifications.
+- Officer review queues.
+- Admin settings and account/role management.
+
+Remove dead links, broken navigation, placeholder actions, stale counts, incorrect status badges, and routes that display unrelated or duplicated data.
+
+Every dashboard metric must be calculated from the authorized records in the data source. Every report and CSV export must reflect the current filters and real saved records.
+
+Keep the UI responsive, accessible, and consistent with the existing AICTE FDR360 design.
+
+# PRIORITY 13 — CORRECT DEMO DATA AND SEEDING
+
+Keep demo data available for the SIH presentation, but isolate it from real registrations and submissions.
+
+- Label synthetic records **“DEMO DATA — NOT REAL.”**
+- Never claim that real named institutions have actually submitted demo FDRs.
+- Never create fake official seals, real-looking signatures, fabricated NOCs, or fabricated approval evidence.
+- Use clearly labelled sample documents or placeholders.
+- Generate distinct test record IDs.
+- Ensure seed scripts are idempotent.
+- Prevent seed operations from overwriting real user data.
+- Restrict destructive resets to authorized demo administrators.
+- Do not automatically create dozens of near-identical FDRs.
+- Do not duplicate institutions when generating multiple FDR records.
+- Keep sample datasets small enough to review and clearly explain.
+
+Create realistic but explicitly synthetic test scenarios covering a normal submission, a missing document, a field mismatch, an upcoming maturity, and a release request requiring review.
+
+# PRIORITY 14 — NOTIFICATIONS, REPORTS, AND AUDITABILITY
+
+Implement persistent in-app notifications for actual events, including:
+- Registration submission and decision.
+- Application submission.
+- Document accepted, rejected, or replacement required.
+- Deficiency raised.
+- Status changes.
+- Maturity reminders.
+- Release request updates.
+
+Only claim email notifications work if an email provider is configured and tested.
+
+Maintain an audit trail for significant actions, including record creation, editing, submission, document upload/replacement, review decisions, status changes, and release actions. Record actor, timestamp, action, and relevant record ID. Protect audit entries against unauthorized editing.
+
+Implement functional reports and CSV exports, including appropriate filters, date ranges, statuses, and institution scopes. Ensure exports do not disclose records outside the user's permissions.
+
+# PRIORITY 15 — TEST THE REAL APPLICATION, NOT JUST THE DESIGN
+
+Run available build, type checks, linting, automated tests, and runtime checks. Repair failures introduced by the changes.
+
+Execute these end-to-end tests using a separate test institution and synthetic documents:
+
+1. Open the site as a new user without a demo account.
+2. Register an institution account.
+3. Verify the account using the configured method.
+4. Sign in, sign out, and sign back in.
+5. Complete and edit the institution profile.
+6. Confirm profile data persists after a refresh.
+7. Create an FDR record and type into every relevant field.
+8. Save a draft, reopen it, and edit it.
+9. Upload an actual test file.
+10. Confirm the file exists in storage and metadata exists in the database.
+11. Confirm the file appears in the correct Document Vault.
+12. Confirm a second institution cannot access the first institution's private records.
+13. Submit an application.
+14. Sign in as an authorized reviewer.
+15. Raise a deficiency with a reason.
+16. Sign in as the institution and upload a replacement.
+17. Resubmit and verify the status transitions.
+18. Test release eligibility and review permissions.
+19. Test search, filters, sorting, pagination, and CSV exports.
+20. Run demo seeding twice and confirm it does not create duplicates.
+21. Confirm the institution directory contains one canonical record per institution.
+22. Confirm distinct FDRs appear once each and their relationships are correct.
+23. Confirm the OCR sync action updates the correct editable fields.
+24. Test invalid forms, upload failures, missing configuration, network errors, and unauthorized access.
+25. Confirm all major routes work on desktop and mobile layouts.
+
+Do not report tests as passed unless they were actually run. If automated browser interaction is unavailable, explain what was checked through code/build tests and what needs manual verification in the preview.
+
+# FINAL ACCEPTANCE CRITERIA
+
+The project is ready for the next stage only when:
+
+- A new institution can register without a predefined demo ID.
+- A user can type into, save, edit, and submit forms.
+- Uploaded files are genuinely persisted and linked to the correct records.
+- The Document Vault shows the authorized user's actual saved documents.
+- Institutions are canonical and not duplicated in master lists.
+- Distinct FDR records are not duplicated by seeding or queries.
+- All important pages use consistent persisted data.
+- Workflow actions respect permissions and configured rules.
+- Demo data is isolated and visibly labelled.
+- Firebase and other required integrations are configured honestly.
+- The application builds and the available tests pass, with remaining limitations documented.
+
+## REQUIRED RESPONSE AFTER IMPLEMENTATION
+
+At the end, provide a concise implementation report containing:
+
+1. Root causes found for the non-editable fields.
+2. Root causes found for repeated institution names and FDR records.
+3. Files/components/services actually changed.
+4. Registration and authentication status.
+5. Storage and Document Vault status.
+6. Database and security-rule changes.
+7. Build/test results and the tests actually executed.
+8. Remaining defects.
+9. Exact manual Firebase or deployment configuration still required.
+
+Do not respond with only a plan, a redesigned screenshot, or a list of suggested changes. Inspect, implement, verify, and report. If the environment cannot complete a step, state exactly what remains and why.
+
+**Work in priority order: inspect the code → repair inputs and persistence → normalize institutions and FDR relationships → fix uploads and Document Vault → enable new-user registration → secure the workflow → test all major journeys. Preserve the existing project and its working integrations throughout.**

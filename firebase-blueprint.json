@@ -1,0 +1,141 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with role and associated institution reference",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 100 },
+        "email": { "type": "string", "format": "email", "maxLength": 128 },
+        "role": { "type": "string", "enum": ["INSTITUTION", "REGIONAL_OFFICER", "PGRC_OFFICER", "VIGILANCE_OFFICER", "ADMINISTRATOR"] },
+        "institutionId": { "type": "string", "maxLength": 128 },
+        "institutionName": { "type": "string", "maxLength": 200 },
+        "designation": { "type": "string", "maxLength": 100 },
+        "phone": { "type": "string", "maxLength": 30 },
+        "createdAt": { "type": "string" },
+        "onboardingComplete": { "type": "boolean" }
+      },
+      "required": ["name", "email", "role", "institutionId", "createdAt"]
+    },
+    "Institution": {
+      "title": "Institution",
+      "description": "Technical institution or university master profile",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 200 },
+        "code": { "type": "string", "maxLength": 50 },
+        "category": { "type": "string", "enum": ["GGSIPU_AFFILIATED", "PRIVATE_UNIVERSITY", "OTHER"] },
+        "state": { "type": "string", "maxLength": 60 },
+        "region": { "type": "string", "maxLength": 50 },
+        "address": { "type": "string", "maxLength": 500 },
+        "approvalStatus": { "type": "string", "enum": ["APPROVED", "PENDING_REVIEW", "REJECTED"] },
+        "createdByUid": { "type": "string", "maxLength": 128 },
+        "isPendingReview": { "type": "boolean" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["name", "code", "approvalStatus"]
+    },
+    "FDR": {
+      "title": "FDR",
+      "description": "Fixed Deposit Receipt under AICTE joint lien",
+      "type": "object",
+      "properties": {
+        "fdrNumber": { "type": "string", "maxLength": 100 },
+        "institutionId": { "type": "string", "maxLength": 128 },
+        "institutionName": { "type": "string", "maxLength": 200 },
+        "bankName": { "type": "string", "maxLength": 100 },
+        "branchName": { "type": "string", "maxLength": 150 },
+        "ifscCode": { "type": "string", "maxLength": 20 },
+        "principalAmount": { "type": "number" },
+        "interestRate": { "type": "number" },
+        "maturityValue": { "type": "number" },
+        "issueDate": { "type": "string" },
+        "maturityDate": { "type": "string" },
+        "jointHolderName": { "type": "string", "maxLength": 200 },
+        "purpose": { "type": "string", "maxLength": 200 },
+        "lifecycleStatus": { "type": "string" },
+        "verificationStatus": { "type": "string" },
+        "createdByUid": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["fdrNumber", "institutionId", "bankName", "principalAmount", "issueDate", "maturityDate"]
+    },
+    "Document": {
+      "title": "Document",
+      "description": "Uploaded statutory certificate or affidavit metadata in Vault",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 200 },
+        "type": { "type": "string" },
+        "url": { "type": "string", "maxLength": 1000 },
+        "storagePath": { "type": "string", "maxLength": 500 },
+        "fileSize": { "type": "string", "maxLength": 50 },
+        "institutionId": { "type": "string", "maxLength": 128 },
+        "fdrId": { "type": "string", "maxLength": 128 },
+        "fdrNumber": { "type": "string", "maxLength": 100 },
+        "uploadedBy": { "type": "string", "maxLength": 100 },
+        "uploadedByUid": { "type": "string", "maxLength": 128 },
+        "uploadedAt": { "type": "string" },
+        "reviewStatus": { "type": "string" }
+      },
+      "required": ["name", "institutionId", "type"]
+    },
+    "ReleaseRequest": {
+      "title": "ReleaseRequest",
+      "description": "Multi-tier security deposit refund request",
+      "type": "object",
+      "properties": {
+        "fdrId": { "type": "string", "maxLength": 128 },
+        "fdrNumber": { "type": "string", "maxLength": 100 },
+        "institutionId": { "type": "string", "maxLength": 128 },
+        "reason": { "type": "string", "maxLength": 300 },
+        "status": { "type": "string" },
+        "submittedByUid": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["fdrId", "institutionId", "reason", "status"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Immutable append-only regulatory audit entry",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "userName": { "type": "string", "maxLength": 100 },
+        "role": { "type": "string", "maxLength": 50 },
+        "action": { "type": "string", "maxLength": 100 },
+        "entityType": { "type": "string", "maxLength": 50 },
+        "entityId": { "type": "string", "maxLength": 128 },
+        "details": { "type": "string", "maxLength": 1000 },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["userId", "action", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profiles with institution scoping and RBAC roles"
+    },
+    "/institutions/{institutionId}": {
+      "schema": { "$ref": "#/entities/Institution" },
+      "description": "Master institution profiles"
+    },
+    "/fdrs/{fdrId}": {
+      "schema": { "$ref": "#/entities/FDR" },
+      "description": "Fixed deposit receipts under AICTE joint lien"
+    },
+    "/documents/{documentId}": {
+      "schema": { "$ref": "#/entities/Document" },
+      "description": "Statutory Vault document metadata"
+    },
+    "/releases/{releaseId}": {
+      "schema": { "$ref": "#/entities/ReleaseRequest" },
+      "description": "Security deposit release applications"
+    },
+    "/auditLogs/{logId}": {
+      "schema": { "$ref": "#/entities/AuditLog" },
+      "description": "Append-only central audit logs"
+    }
+  }
+}

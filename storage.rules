@@ -1,0 +1,28 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Default deny catch-all
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+
+    // Institution Vault Documents: /documents/{institutionId}/{fileName}
+    match /documents/{institutionId}/{fileName} {
+      // Read access restricted to signed-in users
+      allow read: if isSignedIn();
+
+      // Uploads restricted to signed-in users with 10MB size limit and safe content types (PDF, PNG, JPEG)
+      allow write: if isSignedIn()
+        && request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('application/pdf|image/png|image/jpeg|image/jpg');
+
+      // Deletion restricted to signed-in users
+      allow delete: if isSignedIn();
+    }
+  }
+}
